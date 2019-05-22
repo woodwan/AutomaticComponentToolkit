@@ -174,6 +174,8 @@ public:
 	inline PFactorizationCalculator CreateFactorizationCalculator();
 	inline PSieveCalculator CreateSieveCalculator();
 	inline void SetJournal(const std::string & sFileName);
+	inline bool GetLastError_UTF16(CBase * pInstance, std::wstring & sErrorMessage);
+	inline void SetJournal_UTF16(const std::wstring & sFileName);
 
 private:
 	
@@ -373,6 +375,37 @@ public:
 	inline void CWrapper::SetJournal(const std::string & sFileName)
 	{
 		CheckError(nullptr,libprimes_setjournal(sFileName.c_str()));
+	}
+	
+	/**
+	* CWrapper::GetLastError_UTF16 - Returns the last error recorded on this object
+	* @param[in] pInstance - Instance Handle
+	* @param[out] sErrorMessage - Message of the last error
+	* @return Is there a last error to query
+	*/
+	inline bool CWrapper::GetLastError_UTF16(CBase * pInstance, std::wstring & sErrorMessage)
+	{
+		LibPrimesHandle hInstance = nullptr;
+		if (pInstance != nullptr) {
+			hInstance = pInstance->GetHandle();
+		};
+		LibPrimes_uint32 wcharNeededErrorMessage = 0;
+		LibPrimes_uint32 wcharWrittenErrorMessage = 0;
+		bool resultHasError = 0;
+		CheckError(nullptr,libprimes_getlasterror_utf16(hInstance, 0, &wcharNeededErrorMessage, nullptr, &resultHasError));
+		std::vector<wchar_t> bufferErrorMessage(wcharNeededErrorMessage);
+		CheckError(nullptr,libprimes_getlasterror_utf16(hInstance, wcharNeededErrorMessage, &wcharWrittenErrorMessage, &bufferErrorMessage[0], &resultHasError));
+		sErrorMessage = std::wstring(&bufferErrorMessage[0]);
+		return resultHasError;
+	}
+	
+	/**
+	* CWrapper::SetJournal_UTF16 - Handles Library Journaling
+	* @param[in] sFileName - Journal FileName
+	*/
+	inline void CWrapper::SetJournal_UTF16(const std::wstring & sFileName)
+	{
+		CheckError(nullptr,libprimes_setjournal_utf16(sFileName.c_str()));
 	}
 	
 	inline void CWrapper::CheckError(CBase * pBaseClass, LibPrimesResult nResult)

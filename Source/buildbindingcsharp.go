@@ -157,6 +157,9 @@ func getCSharpParameterType(ParamTypeName string, NameSpace string, ParamClass s
 		} else {
 			CSharpParamTypeName = "String"
 		}
+	
+	case "wstring":
+		return "", fmt.Errorf ("type \"wstring\" is not supported in CSharp-bindings")
 
 	case "enum":
 		if isPlain {
@@ -246,6 +249,8 @@ func getCSharpPlainParameters(method ComponentDefinitionMethod, NameSpace string
 			switch param.ParamType {
 			case "string":
 				parameters = parameters + fmt.Sprintf("UInt32 size%s, out UInt32 needed%s, IntPtr data%s", param.ParamName, param.ParamName, param.ParamName)
+			case "wstring":
+				return parameters, fmt.Errorf ("type \"wstring\" is not supported in CSharp-bindings")
 			case "basicarray":
 				parameters = parameters + fmt.Sprintf("UInt64 size%s, out UInt64 needed%s, IntPtr data%s", param.ParamName, param.ParamName, param.ParamName)
 			case "structarray":
@@ -357,6 +362,9 @@ func writeCSharpClassMethodImplementation(method ComponentDefinitionMethod, w La
 				defineCommands = append(defineCommands, fmt.Sprintf("  byte[] byte%s = Encoding.UTF8.GetBytes(A%s + char.MinValue);", param.ParamName, param.ParamName))
 				callFunctionParameter = "byte" + param.ParamName
 				initCallParameter = callFunctionParameter
+			
+			case "wstring":
+				return fmt.Errorf ("type \"wstring\" is not supported in CSharp-bindings")
 
 			case "enum":
 				defineCommands = append(defineCommands, fmt.Sprintf("  Int32 enum%s = (Int32) A%s;", param.ParamName, param.ParamName))
@@ -445,6 +453,9 @@ func writeCSharpClassMethodImplementation(method ComponentDefinitionMethod, w La
 				resultCommands = append(resultCommands, fmt.Sprintf("  A%s = Encoding.UTF8.GetString(bytes%s).TrimEnd(char.MinValue);", param.ParamName, param.ParamName))
 
 				doInitCall = true
+			
+			case "wstring":
+				return fmt.Errorf ("type \"wstring\" is not supported in CSharp-bindings")
 
 			case "enum":
 				defineCommands = append(defineCommands, fmt.Sprintf("  Int32 result%s = 0;", param.ParamName))
@@ -544,6 +555,9 @@ func writeCSharpClassMethodImplementation(method ComponentDefinitionMethod, w La
 				returnCodeLines = append(returnCodeLines, fmt.Sprintf("  return Encoding.UTF8.GetString(bytes%s).TrimEnd(char.MinValue);", param.ParamName))
 
 				doInitCall = true
+			
+			case "wstring":
+				return fmt.Errorf ("type \"wstring\" is not supported in CSharp-bindings")
 
 			case "enum":
 				defineCommands = append(defineCommands, fmt.Sprintf("  Int32 result%s = 0;", param.ParamName))
@@ -689,10 +703,8 @@ func buildBindingCSharpImplementation(component ComponentDefinition, w LanguageW
 				w.Writeln("    public Double%s %s;", arraysuffix, element.Name)
 			case "pointer":
 				w.Writeln("    public UInt64%s %s;", arraysuffix, element.Name)
-			case "string":
-				return fmt.Errorf("it is not possible for struct s%s%s to contain a string value", NameSpace, structinfo.Name)
-			case "class":
-				return fmt.Errorf("it is not possible for struct s%s%s to contain a handle value", NameSpace, structinfo.Name)
+			case "string", "wstring", "class":
+				return fmt.Errorf("it is not possible for struct s%s%s to contain a \"%s\" value", NameSpace, structinfo.Name, element.Type)
 			case "enum":
 				w.Writeln("    public e%s%s %s;", element.Class, arraysuffix, element.Name)
 			}
@@ -766,10 +778,8 @@ func buildBindingCSharpImplementation(component ComponentDefinition, w LanguageW
 			case "pointer":
 				memberLines = append(memberLines, fmt.Sprintf("[FieldOffset(%d)] public %sUint64 %s%s;", fieldOffset, fixedtag, element.Name, arraysuffix))
 				fieldOffset = fieldOffset + 8*multiplier
-			case "string":
-				return fmt.Errorf("it is not possible for struct s%s%s to contain a string value", NameSpace, structinfo.Name)
-			case "class":
-				return fmt.Errorf("it is not possible for struct s%s%s to contain a handle value", NameSpace, structinfo.Name)
+			case "string", "wstring", "class":
+				return fmt.Errorf("it is not possible for struct s%s%s to contain a \"%s\" value", NameSpace, structinfo.Name, element.Type)
 			case "enum":
 				memberLines = append(memberLines, fmt.Sprintf("[FieldOffset(%d)] public %sInt32 %s%s;", fieldOffset, fixedtag, element.Name, arraysuffix))
 				fieldOffset = fieldOffset + 4*multiplier
@@ -817,6 +827,9 @@ func buildBindingCSharpImplementation(component ComponentDefinition, w LanguageW
 
 	for j := 0; j < len(global.Methods); j++ {
 		method := global.Methods[j]
+		if (method.containsWStringParameter()) {
+			continue
+		}
 
 		parameters, err := getCSharpPlainParameters(method, NameSpace, "", true)
 		if err != nil {
@@ -1041,7 +1054,10 @@ func buildBindingCSharpImplementation(component ComponentDefinition, w LanguageW
 
 	for j := 0; j < len(global.Methods); j++ {
 		method := global.Methods[j]
-
+		if (method.containsWStringParameter()) {
+			continue
+		}
+		
 		parameters, returnType, err := getCSharpClassParameters(method, NameSpace, "", true)
 		if err != nil {
 			return err

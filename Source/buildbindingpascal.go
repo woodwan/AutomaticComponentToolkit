@@ -220,6 +220,9 @@ func buildDynamicPascalImplementation(component ComponentDefinition, w LanguageW
 
 		for j := 0; j < len(class.Methods); j++ {
 			method := class.Methods[j]
+			if (method.containsWStringParameter()) {
+				continue
+			}
 			err := writePascalFunctionType(method, w, NameSpace, class.ClassName, false, "  ")
 			if err != nil {
 				return err;
@@ -236,7 +239,10 @@ func buildDynamicPascalImplementation(component ComponentDefinition, w LanguageW
 	global := component.Global;
 	for j := 0; j < len(global.Methods); j++ {
 		method := global.Methods[j]
-				
+		if (method.containsWStringParameter()) {
+			continue
+		}
+
 		err := writePascalFunctionType(method, w, NameSpace, "Wrapper", true, "  ")
 		if err != nil {
 			return err;
@@ -385,7 +391,10 @@ func buildDynamicPascalImplementation(component ComponentDefinition, w LanguageW
 
 	for j := 0; j < len(global.Methods); j++ {
 		method := global.Methods[j]
-		
+		if (method.containsWStringParameter()) {
+			continue
+		}
+
 		err := writePascalClassMethodDefinition(method, w, NameSpace, "Wrapper", true, "    ", false)
 		if err != nil {
 			return err;
@@ -592,7 +601,10 @@ func buildDynamicPascalImplementation(component ComponentDefinition, w LanguageW
 
 	for j := 0; j < len(global.Methods); j++ {
 		method := global.Methods[j]
-						
+		if (method.containsWStringParameter()) {
+			continue
+		}
+		
 		err := writePascalClassMethodImplementation(method, w, NameSpace, "Wrapper", true, "  " )
 		if err != nil {
 			return err;

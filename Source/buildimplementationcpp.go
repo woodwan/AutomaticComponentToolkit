@@ -366,15 +366,14 @@ func buildCPPInterfaces(component ComponentDefinition, w LanguageWriter, NameSpa
 	for j := 0; j < len(global.Methods); j++ {
 		method := global.Methods[j]
 
-		// Omit Journal Method
+		// Omit Journal method or methods with wstring
 		isSpecialFunction, err := CheckHeaderSpecialFunction(method, global);
 		if err != nil {
 			return err
 		}
-		if (isSpecialFunction == eSpecialMethodJournal) {
+		if (isSpecialFunction == eSpecialMethodJournal) || (method.containsWStringParameter()) {
 			continue
 		}
-
 		methodstring, _, err := buildCPPInterfaceMethodDeclaration(method, BaseName, NameSpace, ClassIdentifier, "Wrapper", w.IndentString, true, false, true)
 		if err != nil {
 			return err
@@ -891,7 +890,7 @@ func getCppVariableName (param ComponentDefinitionParam) (string) {
 	switch (param.ParamType) {
 		case "uint8", "uint16", "uint32", "uint64", "int8", "int16", "int32", "int64":
 			return "n" + param.ParamName;
-		case "string":
+		case "string", "wstring":
 			return "s" + param.ParamName;
 		case "bool":
 			return "b" + param.ParamName;
@@ -1234,6 +1233,14 @@ func generatePrePostCallCPPFunctionCode(method ComponentDefinitionMethod, NameSp
 				postCallCode = postCallCode + fmt.Sprintf(indentString + indentString + indentString + indentString + "p%sBuffer[i%s] = %s[i%s];\n", param.ParamName, param.ParamName, variableName, param.ParamName)
 				postCallCode = postCallCode + fmt.Sprintf(indentString + indentString + indentString + "p%sBuffer[%s.size()] = 0;\n", param.ParamName, variableName)
 				postCallCode = postCallCode + fmt.Sprintf(indentString + indentString + "}\n")
+			
+			case "wstring":
+				checkInputCode = checkInputCode + fmt.Sprintf(indentString + indentString + "if ( (!p%sBuffer) && !(p%sNeededChars) )\n", param.ParamName, param.ParamName)
+				checkInputCode = checkInputCode + fmt.Sprintf(indentString + indentString + indentString + "throw E%sInterfaceException (%s_ERROR_INVALIDPARAM);\n", NameSpace, strings.ToUpper(NameSpace))
+
+				preCallCode = preCallCode + fmt.Sprintf(indentString + indentString + "std::string %s(\"\");\n", variableName)
+				callParameters = callParameters + variableName
+				
 
 			default:
 				return "", "", "", "", "", fmt.Errorf("method parameter type \"%s\" of param pass \"%s\" is not implemented for %s::%s(%s) )", param.ParamType, param.ParamPass, ClassName, method.MethodName, param.ParamName)

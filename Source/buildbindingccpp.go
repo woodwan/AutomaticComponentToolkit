@@ -478,7 +478,7 @@ func writeDynamicCPPMethodDeclaration(method ComponentDefinitionMethod, w Langua
 			cppParamType := getBindingCppParamType(param.ParamType, param.ParamClass, NameSpace, ClassIdentifier, true)
 
 			switch param.ParamType {
-			case "string":
+			case "string", "wstring":
 				parameters = parameters + fmt.Sprintf("const %s & %s", cppParamType, variableName)
 			case "struct":
 				parameters = parameters + fmt.Sprintf("const %s & %s", cppParamType, variableName)
@@ -573,7 +573,7 @@ func writeDynamicCPPMethod(method ComponentDefinitionMethod, w LanguageWriter, N
 			commentcodeLines = append(commentcodeLines, fmt.Sprintf("* @param[in] %s - %s", variableName, param.ParamDescription))
 
 			switch param.ParamType {
-			case "string":
+			case "string", "wstring":
 				callParameter = variableName + ".c_str()"
 				initCallParameter = callParameter
 				parameters = parameters + fmt.Sprintf("const %s & %s", cppParamType, variableName)
@@ -622,6 +622,18 @@ func writeDynamicCPPMethod(method ComponentDefinitionMethod, w LanguageWriter, N
 				callParameter = fmt.Sprintf("bytesNeeded%s, &bytesWritten%s, &buffer%s[0]", param.ParamName, param.ParamName, param.ParamName)
 
 				postCallCodeLines = append(postCallCodeLines, fmt.Sprintf("s%s = std::string(&buffer%s[0]);", param.ParamName, param.ParamName))
+			
+			case "wstring":
+				requiresInitCall = true
+				definitionCodeLines = append(definitionCodeLines, fmt.Sprintf("%s_uint32 wcharNeeded%s = 0;", NameSpace, param.ParamName))
+				definitionCodeLines = append(definitionCodeLines, fmt.Sprintf("%s_uint32 wcharWritten%s = 0;", NameSpace, param.ParamName))
+				initCallParameter = fmt.Sprintf("0, &wcharNeeded%s, nullptr", param.ParamName)
+
+				functionCodeLines = append(functionCodeLines, fmt.Sprintf("std::vector<wchar_t> buffer%s(wcharNeeded%s);", param.ParamName, param.ParamName))
+
+				callParameter = fmt.Sprintf("wcharNeeded%s, &wcharWritten%s, &buffer%s[0]", param.ParamName, param.ParamName, param.ParamName)
+
+				postCallCodeLines = append(postCallCodeLines, fmt.Sprintf("s%s = std::wstring(&buffer%s[0]);", param.ParamName, param.ParamName))
 
 			case "class":
 				definitionCodeLines = append(definitionCodeLines, fmt.Sprintf("%sHandle h%s = nullptr;", NameSpace, param.ParamName))
@@ -665,6 +677,18 @@ func writeDynamicCPPMethod(method ComponentDefinitionMethod, w LanguageWriter, N
 				callParameter = fmt.Sprintf("bytesNeeded%s, &bytesWritten%s, &buffer%s[0]", param.ParamName, param.ParamName, param.ParamName)
 
 				returnCodeLines = append(returnCodeLines, fmt.Sprintf("return std::string(&buffer%s[0]);", param.ParamName))
+			
+			case "wstring":
+				requiresInitCall = true
+				definitionCodeLines = append(definitionCodeLines, fmt.Sprintf("%s_uint32 wcharNeeded%s = 0;", NameSpace, param.ParamName))
+				definitionCodeLines = append(definitionCodeLines, fmt.Sprintf("%s_uint32 wcharWritten%s = 0;", NameSpace, param.ParamName))
+				initCallParameter = fmt.Sprintf("0, &wcharNeeded%s, nullptr", param.ParamName)
+
+				functionCodeLines = append(functionCodeLines, fmt.Sprintf("std::vector<wchar_t> buffer%s(wcharNeeded%s);", param.ParamName, param.ParamName))
+
+				callParameter = fmt.Sprintf("wcharNeeded%s, &wcharWritten%s, &buffer%s[0]", param.ParamName, param.ParamName, param.ParamName)
+
+				returnCodeLines = append(returnCodeLines, fmt.Sprintf("return std::wstring(&buffer%s[0]);", param.ParamName))
 
 			case "enum":
 				callParameter = fmt.Sprintf("&result%s", param.ParamName)
@@ -886,6 +910,8 @@ func getBindingCppParamType(paramType string, paramClass string, NameSpace strin
 		return fmt.Sprintf("%s_%s", NameSpace, paramType)
 	case "string":
 		return fmt.Sprintf("std::string")
+	case "wstring":
+		return fmt.Sprintf("std::wstring")
 	case "bool":
 		return fmt.Sprintf("bool")
 	case "pointer":
@@ -929,6 +955,8 @@ func getBindingCppVariableName(param ComponentDefinitionParam) string {
 	case "uint8", "uint16", "uint32", "uint64", "int8", "int16", "int32", "int64":
 		return "n" + param.ParamName
 	case "string":
+		return "s" + param.ParamName
+	case "wstring":
 		return "s" + param.ParamName
 	case "bool":
 		return "b" + param.ParamName

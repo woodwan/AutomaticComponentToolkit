@@ -590,6 +590,8 @@ func getCParameterTypeName(ParamTypeName string, NameSpace string, ParamClass st
 			cParamTypeName = fmt.Sprintf ("%s_pvoid", NameSpace);
 		case "string":
 			cParamTypeName = "char *";
+		case "wstring":
+			cParamTypeName = "wchar_t *";
 		case "enum":
 			cParamTypeName = fmt.Sprintf ("e%s%s", NameSpace, ParamClass);
 		case "struct":
@@ -665,6 +667,11 @@ func generateCCPPParameter(param ComponentDefinitionParam, className string, met
 				cParams[0].ParamType = "const " + cParamTypeName;
 				cParams[0].ParamName = "p" + param.ParamName;
 				cParams[0].ParamComment = fmt.Sprintf("* @param[in] %s - %s", cParams[0].ParamName, param.ParamDescription);
+			
+			case "wstring":
+				cParams[0].ParamType = "const " + cParamTypeName;
+				cParams[0].ParamName = "p" + param.ParamName;
+				cParams[0].ParamComment = fmt.Sprintf("* @param[in] %s - %s", cParams[0].ParamName, param.ParamDescription);
 
 			case "enum":
 				cParams[0].ParamType = cParamTypeName;
@@ -737,6 +744,20 @@ func generateCCPPParameter(param ComponentDefinitionParam, className string, met
 				cParams[1].ParamType = fmt.Sprintf("%s_uint32*", NameSpace)
 				cParams[1].ParamName = "p" + param.ParamName + "NeededChars";
 				cParams[1].ParamComment = fmt.Sprintf("* @param[out] %s - will be filled with the count of the written bytes, or needed buffer size.", cParams[1].ParamName);
+
+				cParams[2].ParamType = cParamTypeName;
+				cParams[2].ParamName = "p" + param.ParamName + "Buffer";
+				cParams[2].ParamComment = fmt.Sprintf("* @param[out] %s - %s buffer of %s, may be NULL", cParams[2].ParamName, param.ParamClass, param.ParamDescription);
+
+			case "wstring":
+				cParams = make([]CParameter,3)
+				cParams[0].ParamType = fmt.Sprintf("const %s_uint32", NameSpace)
+				cParams[0].ParamName = "n" + param.ParamName + "BufferSize";
+				cParams[0].ParamComment = fmt.Sprintf("* @param[in] %s - size of the buffer (including trailing 0)", cParams[0].ParamName);
+
+				cParams[1].ParamType = fmt.Sprintf("%s_uint32*", NameSpace)
+				cParams[1].ParamName = "p" + param.ParamName + "NeededChars";
+				cParams[1].ParamComment = fmt.Sprintf("* @param[out] %s - will be filled with the count of the written wchar_t, or needed buffer size.", cParams[1].ParamName);
 
 				cParams[2].ParamType = cParamTypeName;
 				cParams[2].ParamName = "p" + param.ParamName + "Buffer";

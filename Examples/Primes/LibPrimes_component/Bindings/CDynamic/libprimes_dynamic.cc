@@ -39,6 +39,8 @@ LibPrimesResult InitLibPrimesWrapperTable(sLibPrimesDynamicWrapperTable * pWrapp
 	pWrapperTable->m_CreateFactorizationCalculator = NULL;
 	pWrapperTable->m_CreateSieveCalculator = NULL;
 	pWrapperTable->m_SetJournal = NULL;
+	pWrapperTable->m_GetLastError_UTF16 = NULL;
+	pWrapperTable->m_SetJournal_UTF16 = NULL;
 	
 	return LIBPRIMES_SUCCESS;
 }
@@ -197,6 +199,24 @@ LibPrimesResult LoadLibPrimesWrapperTable(sLibPrimesDynamicWrapperTable * pWrapp
 	dlerror();
 	#endif // _WIN32
 	if (pWrapperTable->m_SetJournal == NULL)
+		return LIBPRIMES_ERROR_COULDNOTFINDLIBRARYEXPORT;
+	
+	#ifdef _WIN32
+	pWrapperTable->m_GetLastError_UTF16 = (PLibPrimesGetLastError_UTF16Ptr) GetProcAddress(hLibrary, "libprimes_getlasterror_utf16");
+	#else // _WIN32
+	pWrapperTable->m_GetLastError_UTF16 = (PLibPrimesGetLastError_UTF16Ptr) dlsym(hLibrary, "libprimes_getlasterror_utf16");
+	dlerror();
+	#endif // _WIN32
+	if (pWrapperTable->m_GetLastError_UTF16 == NULL)
+		return LIBPRIMES_ERROR_COULDNOTFINDLIBRARYEXPORT;
+	
+	#ifdef _WIN32
+	pWrapperTable->m_SetJournal_UTF16 = (PLibPrimesSetJournal_UTF16Ptr) GetProcAddress(hLibrary, "libprimes_setjournal_utf16");
+	#else // _WIN32
+	pWrapperTable->m_SetJournal_UTF16 = (PLibPrimesSetJournal_UTF16Ptr) dlsym(hLibrary, "libprimes_setjournal_utf16");
+	dlerror();
+	#endif // _WIN32
+	if (pWrapperTable->m_SetJournal_UTF16 == NULL)
 		return LIBPRIMES_ERROR_COULDNOTFINDLIBRARYEXPORT;
 	
 	pWrapperTable->m_LibraryHandle = hLibrary;

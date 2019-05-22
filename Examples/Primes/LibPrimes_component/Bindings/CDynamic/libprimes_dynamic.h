@@ -150,6 +150,26 @@ typedef LibPrimesResult (*PLibPrimesCreateSieveCalculatorPtr) (LibPrimes_SieveCa
 */
 typedef LibPrimesResult (*PLibPrimesSetJournalPtr) (const char * pFileName);
 
+/**
+* Returns the last error recorded on this object
+*
+* @param[in] pInstance - Instance Handle
+* @param[in] nErrorMessageBufferSize - size of the buffer (including trailing 0)
+* @param[out] pErrorMessageNeededChars - will be filled with the count of the written wchar_t, or needed buffer size.
+* @param[out] pErrorMessageBuffer -  buffer of Message of the last error, may be NULL
+* @param[out] pHasError - Is there a last error to query
+* @return error code or 0 (success)
+*/
+typedef LibPrimesResult (*PLibPrimesGetLastError_UTF16Ptr) (LibPrimes_Base pInstance, const LibPrimes_uint32 nErrorMessageBufferSize, LibPrimes_uint32* pErrorMessageNeededChars, wchar_t * pErrorMessageBuffer, bool * pHasError);
+
+/**
+* Handles Library Journaling
+*
+* @param[in] pFileName - Journal FileName
+* @return error code or 0 (success)
+*/
+typedef LibPrimesResult (*PLibPrimesSetJournal_UTF16Ptr) (const wchar_t * pFileName);
+
 /*************************************************************************************************************************
  Function Table Structure
 **************************************************************************************************************************/
@@ -168,6 +188,8 @@ typedef struct {
 	PLibPrimesCreateFactorizationCalculatorPtr m_CreateFactorizationCalculator;
 	PLibPrimesCreateSieveCalculatorPtr m_CreateSieveCalculator;
 	PLibPrimesSetJournalPtr m_SetJournal;
+	PLibPrimesGetLastError_UTF16Ptr m_GetLastError_UTF16;
+	PLibPrimesSetJournal_UTF16Ptr m_SetJournal_UTF16;
 } sLibPrimesDynamicWrapperTable;
 
 /*************************************************************************************************************************

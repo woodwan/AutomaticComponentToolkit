@@ -542,4 +542,3 @@ LibPrimesResult libprimes_setjournal(const char * pFileName)
 	}
 }
 
-

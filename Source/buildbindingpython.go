@@ -280,6 +280,10 @@ func buildDynamicPythonImplementation(componentdefinition ComponentDefinition, w
 	
 	for j:=0; j<len(componentdefinition.Global.Methods); j++ {
 		method := componentdefinition.Global.Methods[j]
+		if (method.containsWStringParameter()) {
+			continue
+		}
+
 		err = writeMethod(method, w, NameSpace, "Wrapper", true)
 		if (err!=nil) {
 			return err
@@ -347,7 +351,11 @@ func writeFunctionTableMethod(method ComponentDefinitionMethod, w LanguageWriter
 
 func loadFunctionTable(componentdefinition ComponentDefinition, w LanguageWriter) error {
 	for j:=0; j<len(componentdefinition.Global.Methods); j++ {
-		err := writeFunctionTableMethod(componentdefinition.Global.Methods[j], w, componentdefinition.NameSpace, "Wrapper", true)
+		method := componentdefinition.Global.Methods[j]
+		if (method.containsWStringParameter()) {
+			continue
+		}
+		err := writeFunctionTableMethod(method, w, componentdefinition.NameSpace, "Wrapper", true)
 		if err != nil {
 			return err
 		}
@@ -356,7 +364,11 @@ func loadFunctionTable(componentdefinition ComponentDefinition, w LanguageWriter
 	for i:=0; i<len(componentdefinition.Classes); i++ {
 		class := componentdefinition.Classes[i]
 		for j:=0; j<len(class.Methods); j++ {
-			err := writeFunctionTableMethod(class.Methods[j], w, componentdefinition.NameSpace, class.ClassName, false)
+			method := class.Methods[j]
+			if (method.containsWStringParameter()) {
+				continue
+			}
+			err := writeFunctionTableMethod(method, w, componentdefinition.NameSpace, class.ClassName, false)
 			if err != nil {
 				return err
 			}
@@ -613,7 +625,12 @@ func writePythonClass(component ComponentDefinition, class ComponentDefinitionCl
 	}
 
 	for i:=0; i<len(class.Methods); i++ {
-		err := writeMethod(class.Methods[i], w, NameSpace, class.ClassName, false)
+		method := class.Methods[i]
+		if (method.containsWStringParameter()) {
+			continue
+		}
+
+		err := writeMethod(method, w, NameSpace, class.ClassName, false)
 		if (err != nil) {
 			return err
 		}

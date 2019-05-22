@@ -234,16 +234,52 @@ func (component *ComponentDefinition) Normalize() {
 
 // Normalize adds default values, changes deprecated constants to their later versions
 func (global *ComponentDefinitionGlobal) Normalize() {
+	wcharMethods := []ComponentDefinitionMethod{};
+
 	for i := 0; i < len(global.Methods); i++ {
 		global.Methods[i].Normalize()
+
+		if (global.Methods[i].containsStringParameter()) {
+			if (global.Methods[i].containsStringParameter()) {
+				wcharMethods = append(wcharMethods, global.Methods[i].duplicateAsUTF16())
+			}
+		}
 	}
+	global.Methods = append(global.Methods, wcharMethods...)
+}
+
+func (method *ComponentDefinitionMethod) deepCopy() (ComponentDefinitionMethod) {
+	newMethod := ComponentDefinitionMethod{}
+	newMethod.MethodName = method.MethodName
+	newMethod.MethodDescription = method.MethodDescription
+	for j:= 0; j < len(method.Params); j++ {
+		newMethod.Params = append(newMethod.Params, method.Params[j].deepCopy())
+	}
+	return newMethod
+}
+
+func (method *ComponentDefinitionMethod) duplicateAsUTF16() (ComponentDefinitionMethod) {
+	// This does not create a deep copy...
+	newMethod := method.deepCopy()
+	newMethod.MethodName = newMethod.MethodName + "_UTF16"
+	for j:= 0; j < len(method.Params); j++ {
+		if (newMethod.Params[j].ParamType == "string") {
+			newMethod.Params[j].ParamType = "wstring"
+		}
+	}
+	return newMethod
 }
 
 // Normalize adds default values, changes deprecated constants to their later versions
 func (class *ComponentDefinitionClass) Normalize() {
+	wcharMethods := []ComponentDefinitionMethod{};
 	for i := 0; i < len(class.Methods); i++ {
 		class.Methods[i].Normalize()
+		if (class.Methods[i].containsStringParameter()) {
+			wcharMethods = append(wcharMethods, class.Methods[i].duplicateAsUTF16())
+		}
 	}
+	class.Methods = append(class.Methods, wcharMethods...)
 }
 
 // Normalize adds default values, changes deprecated constants to their later versions
@@ -253,11 +289,39 @@ func (method *ComponentDefinitionMethod) Normalize() {
 	}
 }
 
+func (method *ComponentDefinitionMethod) containsStringParameter() (bool) {
+	for i := 0; i < len(method.Params); i++ {
+		if (method.Params[i].ParamType == "string") {
+			return true
+		}
+	}
+	return false
+}
+
+func (method *ComponentDefinitionMethod) containsWStringParameter() (bool) {
+	for i := 0; i < len(method.Params); i++ {
+		if (method.Params[i].ParamType == "wstring") {
+			return true
+		}
+	}
+	return false
+}
+
 // Normalize adds default values, changes deprecated constants to their later versions
 func (param *ComponentDefinitionParam) Normalize() {
 	if param.ParamType == "handle" {
 		param.ParamType = "class"
 	}
+}
+
+func (param *ComponentDefinitionParam) deepCopy() (ComponentDefinitionParam) {
+	newParam := ComponentDefinitionParam{}
+	newParam.ParamClass = param.ParamClass
+	newParam.ParamDescription = param.ParamDescription
+	newParam.ParamName = param.ParamName
+	newParam.ParamPass = param.ParamPass
+	newParam.ParamType = param.ParamType
+	return newParam
 }
 
 func getIndentationString (str string) string {

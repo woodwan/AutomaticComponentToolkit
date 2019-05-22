@@ -161,6 +161,26 @@ LIBPRIMES_DECLSPEC LibPrimesResult libprimes_createsievecalculator(LibPrimes_Sie
 */
 LIBPRIMES_DECLSPEC LibPrimesResult libprimes_setjournal(const char * pFileName);
 
+/**
+* Returns the last error recorded on this object
+*
+* @param[in] pInstance - Instance Handle
+* @param[in] nErrorMessageBufferSize - size of the buffer (including trailing 0)
+* @param[out] pErrorMessageNeededChars - will be filled with the count of the written wchar_t, or needed buffer size.
+* @param[out] pErrorMessageBuffer -  buffer of Message of the last error, may be NULL
+* @param[out] pHasError - Is there a last error to query
+* @return error code or 0 (success)
+*/
+LIBPRIMES_DECLSPEC LibPrimesResult libprimes_getlasterror_utf16(LibPrimes_Base pInstance, const LibPrimes_uint32 nErrorMessageBufferSize, LibPrimes_uint32* pErrorMessageNeededChars, wchar_t * pErrorMessageBuffer, bool * pHasError);
+
+/**
+* Handles Library Journaling
+*
+* @param[in] pFileName - Journal FileName
+* @return error code or 0 (success)
+*/
+LIBPRIMES_DECLSPEC LibPrimesResult libprimes_setjournal_utf16(const wchar_t * pFileName);
+
 }
 
 #endif // __LIBPRIMES_HEADER_CPP

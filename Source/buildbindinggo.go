@@ -227,10 +227,8 @@ func buildGoStructs(component ComponentDefinition, w LanguageWriter) (error) {
 				w.Writeln("    %s%s float64;", member.Name, arraysuffix)
 			case "pointer":
 				w.Writeln("    %s%s uint64;", member.Name, arraysuffix)
-			case "string":
-				return fmt.Errorf("it is not possible for struct s%s%s to contain a string value", NameSpace, structinfo.Name)
-			case "class":
-				return fmt.Errorf("it is not possible for struct s%s%s to contain a handle value", NameSpace, structinfo.Name)
+			case "string", "wstring", "class":
+				return fmt.Errorf("it is not possible for struct s%s%s to contain a \"%s\" value", NameSpace, structinfo.Name, member.Type)
 			case "enum":
 				w.Writeln("    %s%s E%s%s;", member.Name, arraysuffix, NameSpace, member.Class)
 			}
@@ -587,6 +585,9 @@ func buildGoWrapper(component ComponentDefinition, w LanguageWriter, implw Langu
 	global = component.Global
 	for j := 0; j < len(global.Methods); j++ {
 	 	method := global.Methods[j]
+		if (method.containsWStringParameter()) {
+			continue
+		}
 
 	 	err := writeGoMethod(method, w, implw, NameSpace, "Wrapper", true, &classdefinitions)
 	 	if err != nil {

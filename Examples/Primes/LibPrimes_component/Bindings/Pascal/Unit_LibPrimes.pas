@@ -328,6 +328,8 @@ type
     FLibPrimesCreateFactorizationCalculatorFunc: TLibPrimesCreateFactorizationCalculatorFunc;
     FLibPrimesCreateSieveCalculatorFunc: TLibPrimesCreateSieveCalculatorFunc;
     FLibPrimesSetJournalFunc: TLibPrimesSetJournalFunc;
+    FLibPrimesGetLastError_UTF16Func: TLibPrimesGetLastError_UTF16Func;
+    FLibPrimesSetJournal_UTF16Func: TLibPrimesSetJournal_UTF16Func;
 
     {$IFDEF MSWINDOWS}
     function LoadFunction (AFunctionName: AnsiString; FailIfNotExistent: Boolean = True): FARPROC;
@@ -350,6 +352,8 @@ type
     property LibPrimesCreateFactorizationCalculatorFunc: TLibPrimesCreateFactorizationCalculatorFunc read FLibPrimesCreateFactorizationCalculatorFunc;
     property LibPrimesCreateSieveCalculatorFunc: TLibPrimesCreateSieveCalculatorFunc read FLibPrimesCreateSieveCalculatorFunc;
     property LibPrimesSetJournalFunc: TLibPrimesSetJournalFunc read FLibPrimesSetJournalFunc;
+    property LibPrimesGetLastError_UTF16Func: TLibPrimesGetLastError_UTF16Func read FLibPrimesGetLastError_UTF16Func;
+    property LibPrimesSetJournal_UTF16Func: TLibPrimesSetJournal_UTF16Func read FLibPrimesSetJournal_UTF16Func;
     procedure CheckError (AInstance: TLibPrimesBase; AErrorCode: TLibPrimesResult);
   public
     constructor Create (ADLLName: String);
@@ -542,6 +546,8 @@ implementation
     FLibPrimesCreateFactorizationCalculatorFunc := LoadFunction ('libprimes_createfactorizationcalculator');
     FLibPrimesCreateSieveCalculatorFunc := LoadFunction ('libprimes_createsievecalculator');
     FLibPrimesSetJournalFunc := LoadFunction ('libprimes_setjournal');
+    FLibPrimesGetLastError_UTF16Func := LoadFunction ('libprimes_getlasterror_utf16');
+    FLibPrimesSetJournal_UTF16Func := LoadFunction ('libprimes_setjournal_utf16');
     
     checkBinaryVersion();
   end;
