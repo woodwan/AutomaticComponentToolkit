@@ -565,7 +565,7 @@ func writeDynamicCPPMethodDeclaration(method ComponentDefinitionMethod, w Langua
 }
 
 func writeDynamicCPPMethod(method ComponentDefinitionMethod, w LanguageWriter, NameSpace string, ClassIdentifier string, ClassName string,
-	implementationLines []string, isGlobal bool, includeComments bool, doNotThrow bool, useCPPTypes bool, ExplicitLinking bool) error {
+	implementationLines []string, isGlobal bool, includeComments bool, doNotThrow bool, useCPPTypes bool, ExplicitLinking bool, Interface bool) error {
 
 	CMethodName := ""
 	requiresInitCall := false
@@ -576,7 +576,9 @@ func writeDynamicCPPMethod(method ComponentDefinitionMethod, w LanguageWriter, N
 	makeSharedParameter := ""
 
 	if isGlobal {
-		if ExplicitLinking {
+		if Interface {
+			CMethodName = fmt.Sprintf("m_abi.m_vtable->m_%s", method.MethodName)
+		} else if ExplicitLinking {
 			CMethodName = fmt.Sprintf("m_WrapperTable.m_%s", method.MethodName)
 		} else {
 			CMethodName = fmt.Sprintf("%s_%s", strings.ToLower(NameSpace), strings.ToLower(method.MethodName))
@@ -584,7 +586,9 @@ func writeDynamicCPPMethod(method ComponentDefinitionMethod, w LanguageWriter, N
 		checkErrorCodeBegin = "CheckError(nullptr,"
 		makeSharedParameter = "this"
 	} else {
-		if ExplicitLinking {
+		if Interface {
+			CMethodName = fmt.Sprintf("m_abi.m_vtable->m_%s", method.MethodName)
+		} else if ExplicitLinking {
 			CMethodName = fmt.Sprintf("m_pWrapper->m_WrapperTable.m_%s_%s", ClassName, method.MethodName)
 		} else {
 			CMethodName = fmt.Sprintf("%s_%s_%s", strings.ToLower(NameSpace), strings.ToLower(ClassName), strings.ToLower(method.MethodName))
@@ -1032,7 +1036,7 @@ func getBindingCppParamType(paramType string, paramClass string, NameSpace strin
 		return fmt.Sprintf("std::vector<%s>", typeName)
 	case "enum":
 		return fmt.Sprintf(paramNameSpace + "e" + paramClassName)
-	case "struct":
+	case "struct", "interface":
 		return fmt.Sprintf(paramNameSpace + "s" + paramClassName)
 	case "class", "optionalclass":
 		if isInput {
@@ -1064,7 +1068,7 @@ func getBindingCppVariableName(param ComponentDefinitionParam) string {
 		return "p" + param.ParamName
 	case "enum":
 		return "e" + param.ParamName
-	case "struct":
+	case "struct", "interface":
 		return param.ParamName
 	case "class", "optionalclass":
 		return "p" + param.ParamName
@@ -1299,6 +1303,104 @@ func buildCppHeader(component ComponentDefinition, w LanguageWriter, NameSpace s
 	w.Writeln("};")
 	w.Writeln("")
 
+	for _, interfaceInfo := range component.Interfaces {
+		w.Writeln("")
+		w.Writeln("/*************************************************************************************************************************")
+		w.Writeln(" Wrapper for interface %s ", interfaceInfo.Name)
+		w.Writeln("**************************************************************************************************************************/")
+		w.Writeln("")
+		w.Writeln("class C%s {", interfaceInfo.Name)
+		w.Writeln("public:")
+		w.AddIndentationLevel(1)
+		w.Writeln("")
+		w.Writeln("  inline C%s(const s%s& abi);", interfaceInfo.Name, interfaceInfo.Name)
+		w.Writeln("  inline C%s(const C%s& that);", interfaceInfo.Name, interfaceInfo.Name)
+		w.Writeln("  inline C%s& operator=(const C%s& that);", interfaceInfo.Name, interfaceInfo.Name)
+		w.Writeln("  inline ~C%s();", interfaceInfo.Name)
+		w.Writeln("")
+		w.Writeln("  inline const s%s& GetABI() const;", interfaceInfo.Name)
+		w.Writeln("")
+		for _, method := range interfaceInfo.Methods {
+			// TODO: ClassIdentifier
+			err = writeDynamicCPPMethodDeclaration(method, w, NameSpace, "", interfaceInfo.Name)
+			if err != nil {
+				return err
+			}
+		}
+		w.AddIndentationLevel(-1)
+		w.Writeln("private:")
+		w.AddIndentationLevel(1)
+		w.Writeln("s%s m_abi;", interfaceInfo.Name)
+		w.AddIndentationLevel(-1)
+		w.Writeln("};")
+		w.Writeln("")
+		for _, method := range interfaceInfo.Methods {
+			// TODO: ClassIdentifier
+			// TODO: Deal with CheckError(). 'normal' ACT code calls
+			// wrapper. Intention here is that 'wrapper' objects are
+			// constructible without one. Could add a 'GetLastError'
+			// method for this to the vtable.
+			err = writeDynamicCPPMethod(method, w, NameSpace, "", interfaceInfo.Name,
+				make([]string, 0), false, false, false, useCPPTypes, ExplicitLinking, true)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	// TODO:
+	// Could also do a 'toABI' template e.g.
+	//
+	// template <typename tWRAPPED>
+	// class CAbsDmkToABI {
+	// public:
+	//
+	//   // Assumes 'this' is compatible with 'tWRAPPED*' - crtp
+	//   void toABI(sAbsDmk& abi) { abi = { this, GetVTable() }; };
+	//
+	// private:
+	//
+	//   // Generated forwarding function for each method.
+	//   static AbsCamResult GetJobfileProcessor_ABI(AbsCam_AbsJobfileProcessor handle, sAbsJobfileProcessor* out) {
+	//     AbsCamResult ret = AbsCam_SUCCESS;
+	//     try {
+	//       ((tWRAPPED*)handle)->GetJobfileProcessor(*out);
+	//     } catch {
+	//       // ...
+	//     }
+	//     return ret;
+	//   }
+	//
+	//   // Static vtable loaded with those functions.
+	//   static sAbsDmkVTable* GetVTable();
+	// };
+	//
+	//
+	// // Hand written, in implementation somewhere
+	// class Dmk : public AbsCam::CAbsDmkToABI<Dmk> {
+	// public:
+	//   void GetJobfileProcessor(sAbsJobfileProcessor& out);
+	//   // ...
+	// };
+
+	// TODO:
+	//
+	// Interfaces currently assumed to be passed in & out as structs, e.g.:
+	//
+	//   void GetJobfileProcessor(sAbsJobfileProcessor& out);
+	//
+	// wrapper classes could 'sugar' this by assuming wrappers as input e.g.
+	//
+	// // IN
+	// class CAbsDmk {
+	// public:
+	//   CAbsJobfileProcessor GetJobfileProcessor() {
+	//     sAbsJobfileProcessor ret_abi = {};
+	//     CheckError(m_abi.m_vtable->GetJobfileProcessor(m_abi.m_handle, &ret_abi));
+	//     return CAbsJobfileProcessor(ret_abi);
+	//   }
+	// };
+
 	for i := 0; i < len(component.Classes); i++ {
 		class := component.Classes[i]
 		cppClassName := cppClassPrefix + ClassIdentifier + class.ClassName
@@ -1376,7 +1478,7 @@ func buildCppHeader(component ComponentDefinition, w LanguageWriter, NameSpace s
 			implementationLines = append(implementationLines, fmt.Sprintf("  throw E%sException(%s_ERROR_COULDNOTLOADLIBRARY, \"Unknown namespace \" + %s);", NameSpace, strings.ToUpper(NameSpace), sParamName))
 		}
 
-		err = writeDynamicCPPMethod(method, w, NameSpace, ClassIdentifier, "Wrapper", implementationLines, true, true, false, useCPPTypes, ExplicitLinking)
+		err = writeDynamicCPPMethod(method, w, NameSpace, ClassIdentifier, "Wrapper", implementationLines, true, true, false, useCPPTypes, ExplicitLinking, false)
 		if err != nil {
 			return err
 		}
@@ -1451,7 +1553,7 @@ func buildCppHeader(component ComponentDefinition, w LanguageWriter, NameSpace s
 		w.Writeln("   */")
 		for j := 0; j < len(class.Methods); j++ {
 			method := class.Methods[j]
-			err := writeDynamicCPPMethod(method, w, NameSpace, ClassIdentifier, class.ClassName, make([]string, 0), false, true, false, useCPPTypes, ExplicitLinking)
+			err := writeDynamicCPPMethod(method, w, NameSpace, ClassIdentifier, class.ClassName, make([]string, 0), false, true, false, useCPPTypes, ExplicitLinking, false)
 			if err != nil {
 				return err
 			}

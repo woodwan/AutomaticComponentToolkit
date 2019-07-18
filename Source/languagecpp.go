@@ -93,7 +93,7 @@ func getCPPParameterTypeName(ParamTypeName string, NameSpace string, ParamClass 
 	switch ParamTypeName {
 	case "enum":
 		cppParamTypeName = fmt.Sprintf("%s::e%s", paramNameSpace, paramClassName)
-	case "struct":
+	case "struct", "interface":
 		cppParamTypeName = fmt.Sprintf("%s::s%s *", paramNameSpace, paramClassName)
 	case "structarray":
 		cppParamTypeName = fmt.Sprintf("%s::s%s *", paramNameSpace, paramClassName)

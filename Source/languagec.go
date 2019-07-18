@@ -147,6 +147,9 @@ func buildSharedCCPPTypesHeader(component ComponentDefinition, w LanguageWriter,
 	w.Writeln("**************************************************************************************************************************/")
 	w.Writeln("")
 
+	for _, ifce := range component.Interfaces {
+		w.Writeln("typedef %sHandle %s_%s;", NameSpace, NameSpace, ifce.Name)
+	}
 	for i := 0; i < len(component.Classes); i++ {
 		class := component.Classes[i]
 		w.Writeln("typedef %sHandle %s_%s;", NameSpace, NameSpace, class.ClassName)
@@ -198,6 +201,10 @@ func buildCCPPTypesHeader(component ComponentDefinition, w LanguageWriter, NameS
 	}
 
 	err = buildCCPPEnums(component, w, NameSpace, useCPPTypes)
+	if err != nil {
+		return err
+	}
+	err = buildCCPPInterfaces(component, w, NameSpace, useCPPTypes)
 	if err != nil {
 		return err
 	}
@@ -470,6 +477,86 @@ func buildCCPPStructs(component ComponentDefinition, w LanguageWriter, NameSpace
 	return nil
 }
 
+func buildCCPPInterfaces(component ComponentDefinition, w LanguageWriter, NameSpace string, useCPPTypes bool) error {
+	if len(component.Interfaces) == 0 {
+		return nil
+	}
+
+	w.Writeln("/*************************************************************************************************************************")
+	w.Writeln(" Declaration of interfaces")
+	w.Writeln("**************************************************************************************************************************/")
+	w.Writeln("")
+
+	w.Writeln("#pragma pack (1)")
+	w.Writeln("")
+
+	// Predeclare
+	w.Writeln("/* Predeclare all interfaces */")
+	w.Writeln("")
+	for _, interfaceInfo := range component.Interfaces {
+		var typeName string
+		if useCPPTypes {
+			typeName = fmt.Sprintf("s%s", interfaceInfo.Name)
+		} else {
+			typeName = fmt.Sprintf("s%s%s", NameSpace, interfaceInfo.Name)
+		}
+		w.Writeln("typedef struct %s;", typeName)
+		w.Writeln("typedef struct %s_VTable;", typeName)
+	}
+	w.Writeln("")
+
+	// Write interface structs.
+	w.Writeln("/* Define interfaces */")
+	w.Writeln("")
+	for _, interfaceInfo := range component.Interfaces {
+
+		handleType := fmt.Sprintf("%s_%s", NameSpace, interfaceInfo.Name)
+
+		var typeName string
+		if useCPPTypes {
+			typeName = fmt.Sprintf("s%s", interfaceInfo.Name)
+		} else {
+			typeName = fmt.Sprintf("s%s%s", NameSpace, interfaceInfo.Name)
+		}
+
+		var typeNameVTable string = typeName + "_VTable"
+
+		// 1. Write the interface handle struct.
+		w.Writeln("/* %s Handle struct */", interfaceInfo.Name)
+		w.Writeln("typedef struct {")
+		w.AddIndentationLevel(1)
+		w.Writeln("%s m_%s;", handleType, "handle")
+		w.Writeln("%s* m_%s;", typeNameVTable, "vtable")
+		w.AddIndentationLevel(-1)
+		w.Writeln("} %s;", typeName)
+		w.Writeln("")
+
+		// 2. Write the function types
+		w.Writeln("/* %s function signatures */", interfaceInfo.Name)
+		for _, method := range interfaceInfo.Methods {
+			WriteCCPPAbiMethod(method, w, NameSpace, interfaceInfo.Name, false, true, useCPPTypes)
+		}
+		w.Writeln("")
+
+		// 3. Write the vtable struct.
+		w.Writeln("/* %s VTable struct */", interfaceInfo.Name)
+		w.Writeln("typedef struct {")
+		w.AddIndentationLevel(1)
+		for _, method := range interfaceInfo.Methods {
+			CCallbackName := fmt.Sprintf("P%s%s_%sPtr", NameSpace, interfaceInfo.Name, method.MethodName)
+			w.Writeln("%s m_%s;", CCallbackName, method.MethodName)
+		}
+		w.AddIndentationLevel(-1)
+		w.Writeln("} %s;", typeNameVTable)
+		w.Writeln("")
+	}
+
+	w.Writeln("#pragma pack ()")
+	w.Writeln("")
+
+	return nil
+}
+
 func buildCCPPEnums(component ComponentDefinition, w LanguageWriter, NameSpace string, useCPPTypes bool) error {
 	if len(component.Enums) == 0 {
 		return nil
@@ -596,7 +683,7 @@ func getCParameterTypeName(ParamTypeName string, NameSpace string, ParamClass st
 		cParamTypeName = "char *"
 	case "enum":
 		cParamTypeName = fmt.Sprintf("e%s%s", paramNameSpace, paramClassName)
-	case "struct":
+	case "struct", "interface":
 		cParamTypeName = fmt.Sprintf("s%s%s *", paramNameSpace, paramClassName)
 	case "basicarray":
 		basicTypeName, err := getCParameterTypeName(paramClassName, paramNameSpace, "")
@@ -674,7 +761,7 @@ func generateCCPPParameter(param ComponentDefinitionParam, className string, met
 			cParams[0].ParamName = "e" + param.ParamName
 			cParams[0].ParamComment = fmt.Sprintf("* @param[in] %s - %s", cParams[0].ParamName, param.ParamDescription)
 
-		case "struct":
+		case "struct", "interface":
 			cParams[0].ParamType = "const " + cParamTypeName
 			cParams[0].ParamName = "p" + param.ParamName
 			cParams[0].ParamComment = fmt.Sprintf("* @param[in] %s - %s", cParams[0].ParamName, param.ParamDescription)
@@ -712,7 +799,7 @@ func generateCCPPParameter(param ComponentDefinitionParam, className string, met
 			cParams[0].ParamName = "p" + param.ParamName
 			cParams[0].ParamComment = fmt.Sprintf("* @param[out] %s - %s", cParams[0].ParamName, param.ParamDescription)
 
-		case "struct":
+		case "struct", "interface":
 			cParams[0].ParamType = cParamTypeName
 			cParams[0].ParamName = "p" + param.ParamName
 			cParams[0].ParamComment = fmt.Sprintf("* @param[out] %s - %s", cParams[0].ParamName, param.ParamDescription)

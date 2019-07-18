@@ -206,6 +206,14 @@ type ComponentDefinitionStruct struct {
 	Members []ComponentDefinitionMember `xml:"member"`
 }
 
+// ComponentDefinitionStruct definition of all interfaces provided by the component's API
+type ComponentDefinitionInterface struct {
+	ComponentDiffableElement
+	XMLName xml.Name                    `xml:"interface"`
+	Name    string                      `xml:"name,attr"`
+	Methods []ComponentDefinitionMethod `xml:"method"`
+}
+
 // ComponentDefinitionLicenseLine a single line of the component's license
 type ComponentDefinitionLicenseLine struct {
 	ComponentDiffableElement
@@ -237,6 +245,7 @@ type ComponentDefinition struct {
 	ImplementationList ComponentDefinitionImplementationList `xml:"implementations"`
 	Enums              []ComponentDefinitionEnum             `xml:"enum"`
 	Structs            []ComponentDefinitionStruct           `xml:"struct"`
+	Interfaces         []ComponentDefinitionInterface        `xml:"interface"`
 	Global             ComponentDefinitionGlobal             `xml:"global"`
 	Errors             ComponentDefinitionErrors             `xml:"errors"`
 	ImportComponents   []ComponentDefinitionImportComponent  `xml:"importcomponent"`
@@ -294,6 +303,7 @@ func ReadComponentDefinition(FileName string, ACTVersion string) (ComponentDefin
 		structMap:       make(map[string]bool, 0),
 		classMap:        make(map[string]bool, 0),
 		functionTypeMap: make(map[string]bool, 0),
+		interfaceMap:    make(map[string]bool, 0),
 	}
 
 	absFileName, err := filepath.Abs(FileName)
@@ -501,6 +511,29 @@ func (component *ComponentDefinition) checkStructs() error {
 	return nil
 }
 
+func (component *ComponentDefinition) checkInterfaces() error {
+	var interfaceNameList = &component.NameMapsLookup.interfaceMap
+	interfaceLowerNameList := make(map[string]bool, 0)
+
+	for _, mstruct := range component.Interfaces {
+		if !nameIsValidIdentifier(mstruct.Name) {
+			return fmt.Errorf("invalid interface name \"%s\"", mstruct.Name)
+		}
+		if interfaceLowerNameList[mstruct.Name] == true {
+			return fmt.Errorf("duplicate interface name \"%s\"", mstruct.Name)
+		}
+		(*interfaceNameList)[mstruct.Name] = true
+		interfaceLowerNameList[strings.ToLower(mstruct.Name)] = true
+
+		for _, functiontype := range mstruct.Methods {
+			if !nameIsValidIdentifier(functiontype.MethodName) {
+				return fmt.Errorf("invalid functiontype name \"%s\"", functiontype.MethodName)
+			}
+		}
+	}
+	return nil
+}
+
 func (component *ComponentDefinition) checkClasses() error {
 	classes := component.Classes
 	baseClassName := component.Global.BaseClassName
@@ -577,6 +610,7 @@ func (component *ComponentDefinition) checkFunctionTypes() error {
 func checkDuplicateNames(nameMaps NameMaps) error {
 	enumList := nameMaps.enumMap
 	structList := nameMaps.structMap
+	interfaceList := nameMaps.interfaceMap
 	classList := nameMaps.classMap
 	functionTypeList := nameMaps.functionTypeMap
 
@@ -590,6 +624,16 @@ func checkDuplicateNames(nameMaps NameMaps) error {
 			return fmt.Errorf("struct with name \"%s\" conflicts with %s of same name", k, val)
 		}
 		allLowerList[strings.ToLower(k)] = "struct"
+	}
+
+	for k := range interfaceList {
+		if val, ok := allLowerList[strings.ToLower(k)]; ok {
+			if val == "interface" {
+				return fmt.Errorf("duplicate interface name \"%s\"", k)
+			}
+			return fmt.Errorf("interface with name \"%s\" conflicts with %s of same name", k, val)
+		}
+		allLowerList[strings.ToLower(k)] = "interface"
 	}
 
 	for k := range enumList {
@@ -667,7 +711,7 @@ func (component *ComponentDefinition) checkMethod(method ComponentDefinitionMeth
 				}
 			}
 
-			if param.ParamType == "class" || param.ParamType == "optionalclass" {
+			if param.ParamType == "class" {
 				if currentNameMaps.classMap[paramClassName] != true {
 					return fmt.Errorf("parameter \"%s\" of method \"%s.%s\" is of unknown class \"%s\"", param.ParamName, className, method.MethodName, param.ParamClass)
 				}
@@ -893,6 +937,7 @@ type NameMaps struct {
 	structMap       map[string]bool
 	classMap        map[string]bool
 	functionTypeMap map[string]bool
+	interfaceMap    map[string]bool
 }
 
 // CheckComponentDefinition checks a component and returns an error, if it fails
@@ -925,6 +970,11 @@ func (component *ComponentDefinition) CheckComponentDefinition() error {
 	}
 
 	err = component.checkStructs()
+	if err != nil {
+		return err
+	}
+
+	err = component.checkInterfaces()
 	if err != nil {
 		return err
 	}
