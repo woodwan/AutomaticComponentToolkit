@@ -1391,13 +1391,27 @@ func buildCppHeader(component ComponentDefinition, w LanguageWriter, NameSpace s
 	//
 	// wrapper classes could 'sugar' this by assuming wrappers as input e.g.
 	//
-	// // IN
+	// // FROM ABI - generated code
 	// class CAbsDmk {
 	// public:
 	//   CAbsJobfileProcessor GetJobfileProcessor() {
 	//     sAbsJobfileProcessor ret_abi = {};
 	//     CheckError(m_abi.m_vtable->GetJobfileProcessor(m_abi.m_handle, &ret_abi));
 	//     return CAbsJobfileProcessor(ret_abi);
+	//   }
+	// };
+	//
+	// // TO ABI - generated code
+	// template <typename tWRAPPED>
+	// class CAbsDmkToABI {
+	// // ...
+	// private:
+	//   static AbsCamResult GetJobfileProcessor_ABI(AbsCam_AbsJobfileProcessor handle, sAbsJobfileProcessor* out) {
+	//     AbsCamResult ret = AbsCam_SUCCESS;
+	//     try {
+	//       CAbsJobfileProcessor ret = ((tWRAPPED*)handle)->GetJobfileProcessor();
+	//       *out = *ret.GetABI();
+	//     }
 	//   }
 	// };
 
