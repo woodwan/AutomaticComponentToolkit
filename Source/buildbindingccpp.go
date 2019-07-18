@@ -1303,6 +1303,9 @@ func buildCppHeader(component ComponentDefinition, w LanguageWriter, NameSpace s
 	w.Writeln("};")
 	w.Writeln("")
 
+	// TODO: Write wrapper class for each interface. This wraps an instance
+	// of the 'handle' struct, i.e. an object handle and a vtable ptr, and
+	// exposes method wrappers around the function ptrs.
 	for _, interfaceInfo := range component.Interfaces {
 		w.Writeln("")
 		w.Writeln("/*************************************************************************************************************************")
