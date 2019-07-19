@@ -1,0 +1,58 @@
+<?xml version="1.0"?>
+
+<component libraryname="Wibble"
+           namespace="Wibble"
+           copyright="Autodesk"
+           year="2019"
+           basename="wibble"
+           version="0.0.1">
+
+  <!-- ******************************************************************** -->
+  <license>
+    <line value="All rights reserved." />
+  </license>
+
+  <!-- ******************************************************************** -->
+  <!-- Generate a binding and implementaton so we can verify. -->
+  <bindings>
+    <binding language="CppDynamic" indentation="2spaces"/>
+  </bindings>
+
+  <!-- ******************************************************************** -->
+  <errors>
+    <error name="NOTIMPLEMENTED" code="1" description="functionality not implemented" />
+    <error name="INVALIDPARAM" code="2" description="an invalid parameter was passed" />
+    <error name="INVALIDCAST" code="3" description="a type cast failed" />
+    <error name="BUFFERTOOSMALL" code="4" description="a provided buffer is too small" />
+    <error name="GENERICEXCEPTION" code="5" description="a generic exception occurred" />
+    <error name="COULDNOTLOADLIBRARY" code="6" description="the library could not be loaded" />
+    <error name="COULDNOTFINDLIBRARYEXPORT" code="7" description="a required exported symbol could not be found in the library" />
+    <error name="INCOMPATIBLEBINARYVERSION" code="8" description="the version of the binary interface does not match the bindings interface" />
+  </errors>
+
+  <!-- ******************************************************************** -->
+  <!-- Boilerplate. We don't really want any of this stuff, since this
+       component is for 'inclusion only' , but ACT makes us implement it. -->
+  <class name="Base"/>
+  <global baseclassname="Base">
+  </global>
+
+
+  <!-- ******************************************************************** -->
+  <!-- ******************************************************************** -->
+  <!-- ******************************************************************** -->
+  <!-- ******************************************************************** -->
+  <!-- The actual interface. -->
+
+  <!-- ******************************************************************** -->
+  <interface name="Wibble">
+    <method name="GetWobble">
+      <param pass="out" type="interface" class="Wobble"/>
+    </method>
+  </interface>
+
+  <!-- ******************************************************************** -->
+  <interface name="Wobble">
+  </interface>
+
+</component>
