@@ -1,23 +1,38 @@
+# Pre demo clean:
+ensure act built and on path, python 64 on path
+cd AutomaticComponentToolkit
+git reset --hard
+rm -r Examples/Primes/LibPrimes_component/Implementations/Cpp/_build
+
+# Go to example dir
 cd Examples/Primes/
 
 # Show interface file
 vim libPrimes.xml
 
+# Generate component
 act libPrimes.xml
 
+# Show generated files
+note: this one we filled in earlier.
 find LibPrimes_component | less
 
+# Build component
 cd LibPrimes_component/Implementations/Cpp
 mkdir _build
 cd _build
 cmake ..
 cmake --build .
 
+# There it is
 ls Debug
 
+# Go to example
 cd ../../../Examples/Python
 
+# Walk through example script. Point it at dll.
 vim LibPrimes_Example.py
 insert '../../Implementations/Cpp/_build/Debug'
 
+# Run example. tada!
 python LibPrimes_Example.py
