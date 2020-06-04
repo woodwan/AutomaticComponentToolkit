@@ -20,7 +20,26 @@ sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", 
 import LibPrimes
 
 
+# A progress callback.  If shouldAbort[0] (i.e. *shouldAbort) is set to
+# true, the calculation should abort, otherwise it will continue.
+# control this behaviour with a global variable corresponding to the
+# --abort command line argument.
+abortCalculationFlag = False
+def progressCallback(progress, shouldAbort):
+  print("Progress = {:d}%".format(round(progress*100)))
+  if (shouldAbort is not None):
+    if abortCalculationFlag and progress > 0.5:
+      shouldAbort[0] = 1
+    else:
+      shouldAbort[0] = 0
+
+
 def main():
+
+  # Are we going to try to sabotage the calculation?
+  if len(sys.argv) > 1 and sys.argv[1] == "--abort":
+    global abortCalculationFlag
+    abortCalculationFlag = True
 
   # Load the component library
   libpath = '../../Implementations/Cpp/_build/Debug'
@@ -36,6 +55,10 @@ def main():
 
   # Initialise it
   calculator.SetValue(100)
+
+  # Provide progress callback
+  cTypesCallback = LibPrimes.ProgressCallback(progressCallback)
+  calculator.SetProgressCallback(cTypesCallback)
 
   # Perform the calculation
   calculator.Calculate()
