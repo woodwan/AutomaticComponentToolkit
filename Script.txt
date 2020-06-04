@@ -3,6 +3,7 @@ ensure act built and on path, python 64 on path
 cd AutomaticComponentToolkit
 git reset --hard
 rm -r Examples/Primes/LibPrimes_component/Implementations/Cpp/_build
+clear
 
 # Go to example dir
 cd Examples/Primes/
@@ -15,7 +16,10 @@ act libPrimes.xml
 
 # Show generated files
 note: this one we filled in earlier.
-find LibPrimes_component | less
+cd LibPrimes_component
+find Bindings
+find Implementations
+find Examples
 
 # Build component
 cd LibPrimes_component/Implementations/Cpp
@@ -30,9 +34,8 @@ ls Debug
 # Go to example
 cd ../../../Examples/Python
 
-# Walk through example script. Point it at dll.
+# Walk through example script.
 vim LibPrimes_Example.py
-insert '../../Implementations/Cpp/_build/Debug'
 
 # Run example. tada!
 python LibPrimes_Example.py
