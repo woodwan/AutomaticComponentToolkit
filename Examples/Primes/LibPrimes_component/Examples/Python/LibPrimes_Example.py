@@ -23,7 +23,7 @@ import LibPrimes
 def main():
 
   # Load the component library
-  libpath = '' # TODO: add path to component
+  libpath = '../../Implementations/Cpp/_build/Debug'
   wrapper = LibPrimes.Wrapper(os.path.join(libpath, "libprimes"))
 
   # Print version info
