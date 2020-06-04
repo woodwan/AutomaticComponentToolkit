@@ -1,0 +1,23 @@
+cd Examples/Primes/
+
+# Show interface file
+vim libPrimes.xml
+
+act libPrimes.xml
+
+find LibPrimes_component | less
+
+cd LibPrimes_component/Implementations/Cpp
+mkdir _build
+cd _build
+cmake ..
+cmake --build .
+
+ls Debug
+
+cd ../../../Examples/Python
+
+vim LibPrimes_Example.py
+insert '../../Implementations/Cpp/_build/Debug'
+
+python LibPrimes_Example.py
