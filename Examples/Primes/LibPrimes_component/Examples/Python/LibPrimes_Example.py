@@ -19,36 +19,40 @@ import sys
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "Bindings", "Python"))
 import LibPrimes
 
-def progressCallback(progress, shouldAbort):
-	print("Progress = {:d}%".format(round(progress*100)))
-	if (shouldAbort is not None):
-		shouldAbort[0] = progress > 0.5
 
 def main():
-	libpath = '' # TODO add the location of the shared library binary here
-	wrapper = LibPrimes.Wrapper(os.path.join(libpath, "libprimes"))
-	wrapper.SetJournal('journal_python.xml')
-	major, minor, micro = wrapper.GetVersion()
-	print("LibPrimes version: {:d}.{:d}.{:d}".format(major, minor, micro), end="")
-	print("")
-	
-	factorization = wrapper.CreateFactorizationCalculator()
-	factorization.SetValue(735)
-	cTypesCallback = LibPrimes.ProgressCallback(progressCallback)
-	factorization.SetProgressCallback(cTypesCallback)
-	factorization.Calculate()
-	primeFactors = factorization.GetPrimeFactors()
-	productString = "*"
-	print("{:d} = ".format(factorization.GetValue()), end="")
-	for i in range(0, len(primeFactors)):
-		pF = primeFactors[i]
-		if i == len(primeFactors) - 1:
-			productString = "\n"
-		print(" {:d}^{:d} ".format(pF.Prime, pF.Multiplicity), end=productString)
-	
+
+  # Load the component library
+  libpath = '' # TODO: add path to component
+  wrapper = LibPrimes.Wrapper(os.path.join(libpath, "libprimes"))
+
+  # Print version info
+  major, minor, micro = wrapper.GetVersion()
+  print("LibPrimes version: {:d}.{:d}.{:d}".format(major, minor, micro), end="")
+  print("")
+  
+  # Create the calculator instance
+  calculator  = wrapper.CreateFactorizationCalculator()
+
+  # Initialise it
+  calculator.SetValue(100)
+
+  # Perform the calculation
+  calculator.Calculate()
+
+  # Get the result & print it
+  primeFactors = calculator.GetPrimeFactors()
+  productString = "*"
+  print("{:d} = ".format(calculator.GetValue()), end="")
+  for i in range(0, len(primeFactors)):
+    pF = primeFactors[i]
+    if i == len(primeFactors) - 1:
+      productString = "\n"
+    print(" {:d}^{:d} ".format(pF.Prime, pF.Multiplicity), end=productString)
+  
 
 if __name__ == "__main__":
-	try:
-		main()
-	except LibPrimes.ELibPrimesException as e:
-		print(e)
+  try:
+    main()
+  except LibPrimes.ELibPrimesException as e:
+    print(e)
